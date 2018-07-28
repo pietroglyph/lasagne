@@ -11,17 +11,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lxn/walk"
-	. "github.com/lxn/walk/declarative"
 	"github.com/lxn/win"
 	ziphelper "github.com/pierrre/archivefile/zip"
+	"github.com/pietroglyph/walk"
+	. "github.com/pietroglyph/walk/declarative"
 	"github.com/pietroglyph/xferspdy"
 	"github.com/skratchdot/open-golang/open"
 )
 
 const (
 	windowWidth  = 400
-	windowHeight = 256
+	windowHeight = 100
 
 	gameDirSelectInfo = ` Please select Garfield Kart's directory. Example locations:
 "C:\Program Files (x86)\Steam\steamapps\common\Garfield Kart"
@@ -51,26 +51,34 @@ func main() {
 	state := waitingToStart
 
 	declarativeWindow := MainWindow{
-		Title:   "Garfield Kart Patcher",
-		MinSize: Size{Width: windowWidth, Height: windowHeight},
-		Layout:  VBox{},
+		Title:            "Garfield Kart Patcher",
+		MinSize:          Size{Width: windowWidth, Height: windowHeight},
+		Layout:           VBox{},
+		FixedSize:        true,
+		MaximizeDisabled: true,
 		Children: []Widget{
 			ProgressBar{AssignTo: &progressBar},
 			PushButton{
 				Text: "Begin Patching",
 				OnClicked: func() {
 					go func() {
-						gamePath := defaultGamePath
-						progressBar.SetValue(0)
+						pi := window.ProgressIndicator()
+						pi.SetState(walk.PINormal)
+						pi.SetTotal(100)
+						setProgress(0, progressBar, pi)
 
+						gamePath := defaultGamePath
+
+						buttonRedoText := "Retry Patching"
 						button.SetEnabled(false)
-						button.SetText("Locating Garfield Kart")
-						state = readingData
 						defer func() {
 							state = waitingToStart
 							button.SetEnabled(true)
-							button.SetText("Retry Patching")
+							button.SetText(buttonRedoText)
 						}()
+
+						button.SetText("Locating Garfield Kart")
+						state = readingData
 						for {
 							_, err := os.Stat(filepath.Join(gamePath, fileToPatchSubPath))
 							if !os.IsNotExist(err) && err == nil {
@@ -78,6 +86,7 @@ func main() {
 							}
 							// Show an error message, and allow the user to abort
 							if walk.MsgBox(window, "Couldn't Locate Garfield Kart", "Garfield Kart couldn't be located. You will now be prompted to locate it manually.", walk.MsgBoxOKCancel|walk.MsgBoxIconExclamation) == win.IDCANCEL {
+								pi.SetState(walk.PIError)
 								return
 							}
 
@@ -89,17 +98,20 @@ func main() {
 							gamePath = fd.FilePath
 							log.Println(fd.FilePath)
 						}
-						progressBar.SetValue(10)
+						setProgress(10, progressBar, pi)
 
 						button.SetText("Downloading patches")
 						resp, err := http.Get(patchFileURL)
-						progressBar.SetValue(30)
+						setProgress(30, progressBar, pi)
 						var body io.ReaderAt
 						var bodySize int64
 						if err != nil {
+							pi.SetState(walk.PIPaused)
 							if walk.MsgBox(window, "Error Downloading Patches", "Couldn't download a patch file ("+err.Error()+")... Would you like to select one locally?", walk.MsgBoxYesNo|walk.MsgBoxIconExclamation) == win.IDNO {
+								pi.SetState(walk.PIError)
 								return
 							}
+
 							picker := walk.FileDialog{
 								Title:  "Select a Patch File",
 								Filter: "Compressed Patch File (*.cpatch)",
@@ -128,12 +140,13 @@ func main() {
 							buf, err := ioutil.ReadAll(resp.Body)
 							if err != nil {
 								walk.MsgBox(window, "Error Reading Downloaded Patches", "Couldn't read downloaded patches ("+err.Error()+").", walk.MsgBoxIconExclamation)
+								pi.SetState(walk.PIError)
 								return
 							}
 							bodySize = int64(len(buf))
 							body = bytes.NewReader(buf)
 						}
-						progressBar.SetValue(40)
+						setProgress(40, progressBar, window.ProgressIndicator())
 
 						button.SetText("Writing assets to disk")
 						var binaryPatchFilePaths []string
@@ -143,42 +156,49 @@ func main() {
 								binaryPatchFilePaths = append(binaryPatchFilePaths, filepath.Join(gamePath, archivePath))
 							}
 						})
-						progressBar.SetValue(70)
+						setProgress(70, progressBar, pi)
 
 						button.SetText("Patching binary files, and cleaning up")
 						for _, v := range binaryPatchFilePaths {
-							binaryToPatch, err := os.Open(strings.TrimSuffix(v, ".patch"))
+							pi.SetState(walk.PINormal)
+							binaryToPatch, err := os.OpenFile(strings.TrimSuffix(v, ".patch"), os.O_RDWR, 0755)
 							if err != nil {
 								walk.MsgBox(window, "Error Opening Corresponding Binary", "A binary corresponding to a patch file was not found or could not be opened. Installation will continue, and this error may be spurious, or your game may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								pi.SetState(walk.PIError)
 								continue
 							}
 							patchFile, err := os.Open(v)
 							if err != nil {
 								walk.MsgBox(window, "Error Opening Constituent Binary Patch File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patch files could not be opened. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								pi.SetState(walk.PIError)
 								continue
 							}
 
 							var delta []xferspdy.Block
 							err = gob.NewDecoder(patchFile).Decode(&delta)
 							if err != nil {
-								walk.MsgBox(window, "Error Decoding Constituent Binary Patch File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patch files could not be decoded. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
-								return
+								walk.MsgBox(window, "Error Decoding Constituent Binary Patch File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patch files could not be decoded. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								pi.SetState(walk.PIError)
+								continue
 							}
 							err = xferspdy.PatchOpenedFile(delta, binaryToPatch, binaryToPatch)
 							if err != nil {
-								walk.MsgBox(window, "Error Patching Binary File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patches could not be applied. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+								walk.MsgBox(window, "Error Patching Binary File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patches could not be applied. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								pi.SetState(walk.PIError)
+								continue
 							}
 						}
-						progressBar.SetValue(100)
+						setProgress(100, progressBar, pi)
 
-						progressBar.SetMarqueeMode(true)
+						button.SetText("Done patching")
+						pi.SetState(walk.PIPaused)
 						if walk.MsgBox(window, "Done Patching", "Garfield Kart has been patched succsessfully. Would you like to run it?", walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == win.IDYES {
 							open.Run("steam://rungameid/" + garfieldKartGameID)
 						}
 
 						progressBar.SetMarqueeMode(false)
-						button.SetText("Patch again")
-						button.SetEnabled(true)
+						pi.SetState(walk.PINoProgress)
+						buttonRedoText = "Patch Again"
 						state = waitingToStart
 					}()
 				},
@@ -214,4 +234,10 @@ func main() {
 	}()
 
 	declarativeWindow.Run()
+}
+
+func setProgress(value int, progressBar *walk.ProgressBar, progressIndicator *walk.ProgressIndicator) {
+	progressBar.SetValue(value)
+	progressIndicator.SetCompleted(uint32(value))
+	progressIndicator.SetState(walk.PINormal)
 }
