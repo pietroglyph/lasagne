@@ -100,21 +100,21 @@ func main() {
 						}
 						setProgress(10, progressBar, pi)
 
-						button.SetText("Downloading patches")
+						button.SetText("Downloading patch bundle")
 						resp, err := http.Get(patchFileURL)
 						setProgress(30, progressBar, pi)
 						var body io.ReaderAt
 						var bodySize int64
 						if err != nil {
 							pi.SetState(walk.PIPaused)
-							if walk.MsgBox(window, "Error Downloading Patches", "Couldn't download a patch file ("+err.Error()+")... Would you like to select one locally?", walk.MsgBoxYesNo|walk.MsgBoxIconExclamation) == win.IDNO {
+							if walk.MsgBox(window, "Error Downloading Patch Bundle", "Couldn't download the patch bundle ("+err.Error()+")... Would you like to select one locally?", walk.MsgBoxYesNo|walk.MsgBoxIconExclamation) == win.IDNO {
 								pi.SetState(walk.PIError)
 								return
 							}
 
 							picker := walk.FileDialog{
-								Title:  "Select a Patch File",
-								Filter: "Compressed Patch File (*.cpatch)",
+								Title:  "Select a Patch Bundle",
+								Filter: "Compressed Patch Bundle (*.patchbundle)",
 							}
 							for {
 								picker.ShowOpen(window)
@@ -139,7 +139,7 @@ func main() {
 						} else {
 							buf, err := ioutil.ReadAll(resp.Body)
 							if err != nil {
-								walk.MsgBox(window, "Error Reading Downloaded Patches", "Couldn't read downloaded patches ("+err.Error()+").", walk.MsgBoxIconExclamation)
+								walk.MsgBox(window, "Error Reading Downloaded Patch Bundle", "Couldn't read downloaded patch bundle ("+err.Error()+").", walk.MsgBoxIconExclamation)
 								pi.SetState(walk.PIError)
 								return
 							}
@@ -158,7 +158,7 @@ func main() {
 						})
 						setProgress(70, progressBar, pi)
 
-						button.SetText("Patching binary files, and cleaning up")
+						button.SetText("Patching binary files")
 						for _, v := range binaryPatchFilePaths {
 							pi.SetState(walk.PINormal)
 							binaryToPatch, err := os.OpenFile(strings.TrimSuffix(v, ".patch"), os.O_RDWR, 0755)
@@ -169,7 +169,7 @@ func main() {
 							}
 							patchFile, err := os.Open(v)
 							if err != nil {
-								walk.MsgBox(window, "Error Opening Constituent Binary Patch File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patch files could not be opened. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								walk.MsgBox(window, "Error Opening Constituent Binary Patch File", "Although the main patch bundle was downloaded and read successfully, one of it's constituent binary patch files could not be opened. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 								pi.SetState(walk.PIError)
 								continue
 							}
@@ -177,16 +177,17 @@ func main() {
 							var delta []xferspdy.Block
 							err = gob.NewDecoder(patchFile).Decode(&delta)
 							if err != nil {
-								walk.MsgBox(window, "Error Decoding Constituent Binary Patch File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patch files could not be decoded. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								walk.MsgBox(window, "Error Decoding Constituent Binary Patch File", "Although the main patch bundle was downloaded and read successfully, one of it's constituent binary patch files could not be decoded. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 								pi.SetState(walk.PIError)
 								continue
 							}
 							err = xferspdy.PatchOpenedFile(delta, binaryToPatch, binaryToPatch)
 							if err != nil {
-								walk.MsgBox(window, "Error Patching Binary File", "Although the main (non-binary) patch file was downloaded and read successfully, one of it's constituent binary patches could not be applied. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+								walk.MsgBox(window, "Error Patching Binary File", "Although the main patch bundle was downloaded and read successfully, one of it's constituent binary patches could not be applied. Installation will continue, but your download may be corrupted.\n"+err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 								pi.SetState(walk.PIError)
 								continue
 							}
+							os.Remove(v) // This returns an error, but we're going to ignore it because this isn't a very important step
 						}
 						setProgress(100, progressBar, pi)
 
@@ -196,7 +197,6 @@ func main() {
 							open.Run("steam://rungameid/" + garfieldKartGameID)
 						}
 
-						progressBar.SetMarqueeMode(false)
 						pi.SetState(walk.PINoProgress)
 						buttonRedoText = "Patch Again"
 						state = waitingToStart
@@ -220,7 +220,7 @@ func main() {
 				if state == readingData {
 					message += "The patch hasn't been written yet, so your game probably won't be corrupted."
 				} else if state == writingData {
-					message += "The patch is being written, and your game will be corrupted if you abort. Steam's game validation and repair function will be launched if you abort. Wait for it to finish."
+					message += "The patch is being written, and your game will probably be corrupted if you abort. Steam's game validation and repair function will be launched if you abort. Wait for it to finish."
 					open.Start("steam://validate/" + garfieldKartGameID)
 				}
 
