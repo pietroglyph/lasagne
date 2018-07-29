@@ -28,7 +28,7 @@ const (
 "E:\SteamLibrary\steamapps\common\Garfield Kart"`
 
 	garfieldKartGameID       = "362930"
-	patchFileURL             = "https://patches.lasagne.margo.ml"
+	patchFileURL             = "https://lasagne.margo.ml"
 	binaryPatchFileBlockSize = 40960
 
 	// Windows-focused for now
