@@ -49,12 +49,17 @@ func main() {
 	var button *walk.PushButton
 	var window *walk.MainWindow
 	state := waitingToStart
+	icon, err := walk.NewIconFromResource("ICON") // Currently this has to be embedded by hand using Resource Hacker... Which isn't optimal, but oh well.
+	if err != nil {
+		log.Println("Couldn't open embedded icon.") // It's not really fatal if we can't get the icon, so we just log the issue
+	}
 
 	declarativeWindow := MainWindow{
 		Title:            "Garfield Kart Patcher",
 		MinSize:          Size{Width: windowWidth, Height: windowHeight},
 		Layout:           VBox{},
 		FixedSize:        true,
+		Icon:             icon,
 		MaximizeDisabled: true,
 		Children: []Widget{
 			ProgressBar{AssignTo: &progressBar},
