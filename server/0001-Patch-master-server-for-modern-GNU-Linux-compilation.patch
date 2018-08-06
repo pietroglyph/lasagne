@@ -1,0 +1,302 @@
+From a7eeedab92c1f23973db0ca80156105c8e85465d Mon Sep 17 00:00:00 2001
+From: pietroglyph <declanfreemangleason@gmail.com>
+Date: Mon, 6 Aug 2018 00:13:17 -0700
+Subject: [PATCH] Patch master server for modern GNU/Linux compilation
+
+---
+ .../RakNet/Sources/DS_BinarySearchTree.h           | 18 ++++++++--------
+ server/Facilitator/RakNet/Sources/RakPeer.cpp      |  2 +-
+ server/MasterServer/Makefile                       |  2 +-
+ server/MasterServer/MasterServer.cpp               | 25 +++++++++++-----------
+ .../RakNet/Sources/DS_BinarySearchTree.h           | 18 ++++++++--------
+ server/MasterServer/RakNet/Sources/RakPeer.cpp     |  2 +-
+ 6 files changed, 34 insertions(+), 33 deletions(-)
+
+diff --git a/server/Facilitator/RakNet/Sources/DS_BinarySearchTree.h b/server/Facilitator/RakNet/Sources/DS_BinarySearchTree.h
+index b63fc98..c7db2b5 100644
+--- a/server/Facilitator/RakNet/Sources/DS_BinarySearchTree.h
++++ b/server/Facilitator/RakNet/Sources/DS_BinarySearchTree.h
+@@ -166,12 +166,12 @@ namespace DataStructures
+ 			if ( current->left == 0 )
+ 				left_height = 0;
+ 			else
+-				left_height = Height( current->left );
++				left_height = this->Height( current->left );
+ 				
+ 			if ( current->right == 0 )
+ 				right_height = 0;
+ 			else
+-				right_height = Height( current->right );
++				right_height = this->Height( current->right );
+ 				
+ 			if ( right_height - left_height == 2 )
+ 			{
+@@ -199,7 +199,7 @@ namespace DataStructures
+ 			if ( current == this->root )
+ 				break;
+ 				
+-			current = FindParent( *( current->item ) );
++			current = this->FindParent( *( current->item ) );
+ 			
+ 		}
+ 	}
+@@ -226,7 +226,7 @@ namespace DataStructures
+ 		if ( A == 0 )
+ 			return false;
+ 			
+-		return Height( A->right ) > Height( A->left );
++		return this->Height( A->right ) > this->Height( A->left );
+ 	}
+ 	
+ 	template <class BinarySearchTreeType>
+@@ -235,7 +235,7 @@ namespace DataStructures
+ 		if ( A == 0 )
+ 			return false;
+ 			
+-		return Height( A->left ) > Height( A->right );
++		return this->Height( A->left ) > this->Height( A->right );
+ 	}
+ 	
+ 	template <class BinarySearchTreeType>
+@@ -272,8 +272,8 @@ namespace DataStructures
+ 		
+ 		*/
+ 		
+-		B = FindParent( *( C->item ) );
+-		A = FindParent( *( B->item ) );
++		B = this->FindParent( *( C->item ) );
++		A = this->FindParent( *( B->item ) );
+ 		D = C->right;
+ 		
+ 		if ( A )
+@@ -336,8 +336,8 @@ namespace DataStructures
+ 		
+ 		*/
+ 		
+-		B = FindParent( *( C->item ) );
+-		A = FindParent( *( B->item ) );
++		B = this->FindParent( *( C->item ) );
++		A = this->FindParent( *( B->item ) );
+ 		D = C->left;
+ 		
+ 		if ( A )
+diff --git a/server/Facilitator/RakNet/Sources/RakPeer.cpp b/server/Facilitator/RakNet/Sources/RakPeer.cpp
+index 2a8b430..d6ae829 100644
+--- a/server/Facilitator/RakNet/Sources/RakPeer.cpp
++++ b/server/Facilitator/RakNet/Sources/RakPeer.cpp
+@@ -159,7 +159,7 @@ static const unsigned int MAX_OFFLINE_DATA_LENGTH=400; // I set this because I l
+ // Should be different than any message that could result from messages from the reliability layer
+ #pragma warning(disable:4309) // 'initializing' : truncation of constant value
+ // Make sure highest bit is 0, so isValid in DatagramHeaderFormat is false
+-static const char OFFLINE_MESSAGE_DATA_ID[16]={0x00,0xFF,0xFF,0x00,0xFE,0xFE,0xFE,0xFE,0xFD,0xFD,0xFD,0xFD,0x12,0x34,0x56,0x78};
++static const unsigned char OFFLINE_MESSAGE_DATA_ID[16]={0x00,0xFF,0xFF,0x00,0xFE,0xFE,0xFE,0xFE,0xFD,0xFD,0xFD,0xFD,0x12,0x34,0x56,0x78};
+ 
+ //#define _DO_PRINTF
+ 
+diff --git a/server/MasterServer/Makefile b/server/MasterServer/Makefile
+index d8009c7..94d6149 100644
+--- a/server/MasterServer/Makefile
++++ b/server/MasterServer/Makefile
+@@ -3,7 +3,7 @@
+ 
+ CC=g++
+ DEFINES = -DUNITY_MASTERSERVER
+-CFLAGS=-Wall -lpthread $(DEFINES)
++CFLAGS=-Wall -Wno-narrowing -lpthread $(DEFINES)
+ DEBUG=-ggdb
+ INCLUDE = .
+ PROGRAMNAME = MasterServer
+diff --git a/server/MasterServer/MasterServer.cpp b/server/MasterServer/MasterServer.cpp
+index 6c21a45..6c5d3e3 100755
+--- a/server/MasterServer/MasterServer.cpp
++++ b/server/MasterServer/MasterServer.cpp
+@@ -19,6 +19,7 @@
+ #include <time.h>
+ #include <windows.h>
+ #else
++#include <unistd.h>
+ #include <stdlib.h>
+ #endif
+ 
+@@ -49,7 +50,7 @@ void usage()
+ 
+ void RemoveTable(std::string table)
+ {
+-	if (table == "") return;	
++	if (table == "") return;
+ 	if (databaseServer.RemoveTable(const_cast<char*>(table.c_str())))
+ 		Log::print_log("Success\n");
+ 	else
+@@ -95,7 +96,7 @@ void ProcessPacket(Packet *packet)
+ 
+ 
+ int main(int argc, char *argv[])
+-{  
++{
+ #ifndef WIN32
+ 	setlinebuf(stdout);
+ #endif
+@@ -109,13 +110,13 @@ int main(int argc, char *argv[])
+ 	int rotateSizeLimit = 50000000;	// 50 MB
+ 	bool useLogFile = false;
+ 	bool daemonMode = false;
+-	
++
+ 	// Process command line arguments
+ 	for (int i = 1; i < argc; i++)
+ 	{
+ 		if (strlen(argv[i]) == 2 && argc>=i+1)
+ 		{
+-			switch (argv[i][1]) 
++			switch (argv[i][1])
+ 			{
+ 				case 'd':
+ 				{
+@@ -145,7 +146,7 @@ int main(int argc, char *argv[])
+ 					break;
+ 				}
+ 				case 'l':
+-				{				
++				{
+ 					useLogFile = Log::EnableFileLogging(logfile);
+ 					break;
+ 				}
+@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
+ 					databaseServer.SetStatDelay(statDelay);
+ 					Log::printStats = true;
+ 					break;
+-				}					
++				}
+ 				case '?':
+ 					usage();
+ 					return 0;
+@@ -190,7 +191,7 @@ int main(int argc, char *argv[])
+ 			return 1;
+ 		}
+ 	}
+-	
++
+ #ifndef WIN32
+ 	if (daemonMode)
+ 	{
+@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
+ 		// Beware that log/pid files are placed wherever this was launched from
+ 		daemon(1, 0);
+ 	}
+-	
++
+ 	if (!WriteProcessID(argv[0], &pidFile[0], fileBufSize))
+ 		perror("Warning, failed to write own PID value to PID file\n");
+ #endif
+@@ -212,13 +213,13 @@ int main(int argc, char *argv[])
+ 	SocketDescriptor sd(listenPort,0);
+ 	masterPeer->Startup(connectionCount, 30, &sd, 1);
+ 	masterPeer->AttachPlugin(&databaseServer);
+-		
++
+ 	Log::print_log("Unity master server version %s\n", VERSION);
+ 	Log::print_log("Master server port set to %d\n",listenPort);
+ 	Log::print_log("%d connection count limit\n", connectionCount);
+ 	if (Log::printStats)
+ 		Log::print_log("%d sec delay between statistics print to log\n", databaseServer.GetStatDelay());
+-	
++
+ 	// Register signal handlers
+ #ifndef WIN32
+ 	if (signal(SIGHUP, Log::RotateLogFile) == SIG_ERR)
+@@ -260,9 +261,9 @@ int main(int argc, char *argv[])
+ 	{
+ 		if (remove(pidFile) != 0)
+ 			fprintf(stderr, "Failed to remove PID file at %s\n", pidFile);
+-	}	
++	}
+ 	masterPeer->Shutdown(100,0);
+ 	RakNetworkFactory::DestroyRakPeerInterface(masterPeer);
+-				
++
+ 	return 0;
+ }
+diff --git a/server/MasterServer/RakNet/Sources/DS_BinarySearchTree.h b/server/MasterServer/RakNet/Sources/DS_BinarySearchTree.h
+index b63fc98..c7db2b5 100644
+--- a/server/MasterServer/RakNet/Sources/DS_BinarySearchTree.h
++++ b/server/MasterServer/RakNet/Sources/DS_BinarySearchTree.h
+@@ -166,12 +166,12 @@ namespace DataStructures
+ 			if ( current->left == 0 )
+ 				left_height = 0;
+ 			else
+-				left_height = Height( current->left );
++				left_height = this->Height( current->left );
+ 				
+ 			if ( current->right == 0 )
+ 				right_height = 0;
+ 			else
+-				right_height = Height( current->right );
++				right_height = this->Height( current->right );
+ 				
+ 			if ( right_height - left_height == 2 )
+ 			{
+@@ -199,7 +199,7 @@ namespace DataStructures
+ 			if ( current == this->root )
+ 				break;
+ 				
+-			current = FindParent( *( current->item ) );
++			current = this->FindParent( *( current->item ) );
+ 			
+ 		}
+ 	}
+@@ -226,7 +226,7 @@ namespace DataStructures
+ 		if ( A == 0 )
+ 			return false;
+ 			
+-		return Height( A->right ) > Height( A->left );
++		return this->Height( A->right ) > this->Height( A->left );
+ 	}
+ 	
+ 	template <class BinarySearchTreeType>
+@@ -235,7 +235,7 @@ namespace DataStructures
+ 		if ( A == 0 )
+ 			return false;
+ 			
+-		return Height( A->left ) > Height( A->right );
++		return this->Height( A->left ) > this->Height( A->right );
+ 	}
+ 	
+ 	template <class BinarySearchTreeType>
+@@ -272,8 +272,8 @@ namespace DataStructures
+ 		
+ 		*/
+ 		
+-		B = FindParent( *( C->item ) );
+-		A = FindParent( *( B->item ) );
++		B = this->FindParent( *( C->item ) );
++		A = this->FindParent( *( B->item ) );
+ 		D = C->right;
+ 		
+ 		if ( A )
+@@ -336,8 +336,8 @@ namespace DataStructures
+ 		
+ 		*/
+ 		
+-		B = FindParent( *( C->item ) );
+-		A = FindParent( *( B->item ) );
++		B = this->FindParent( *( C->item ) );
++		A = this->FindParent( *( B->item ) );
+ 		D = C->left;
+ 		
+ 		if ( A )
+diff --git a/server/MasterServer/RakNet/Sources/RakPeer.cpp b/server/MasterServer/RakNet/Sources/RakPeer.cpp
+index 2a8b430..d6ae829 100644
+--- a/server/MasterServer/RakNet/Sources/RakPeer.cpp
++++ b/server/MasterServer/RakNet/Sources/RakPeer.cpp
+@@ -159,7 +159,7 @@ static const unsigned int MAX_OFFLINE_DATA_LENGTH=400; // I set this because I l
+ // Should be different than any message that could result from messages from the reliability layer
+ #pragma warning(disable:4309) // 'initializing' : truncation of constant value
+ // Make sure highest bit is 0, so isValid in DatagramHeaderFormat is false
+-static const char OFFLINE_MESSAGE_DATA_ID[16]={0x00,0xFF,0xFF,0x00,0xFE,0xFE,0xFE,0xFE,0xFD,0xFD,0xFD,0xFD,0x12,0x34,0x56,0x78};
++static const unsigned char OFFLINE_MESSAGE_DATA_ID[16]={0x00,0xFF,0xFF,0x00,0xFE,0xFE,0xFE,0xFE,0xFD,0xFD,0xFD,0xFD,0x12,0x34,0x56,0x78};
+ 
+ //#define _DO_PRINTF
+ 
+-- 
+2.11.0.windows.1
+
