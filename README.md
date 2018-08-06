@@ -3,6 +3,10 @@ _An enhanced multiplayer patch, patcher, and matchmaking server for Garfield Kar
 
 (The developers of the game have released an update that enables multiplayer, like this patch. This patch has some more features, as you can see below, and you can still install it if you want them.)
 
+## Installation
+
+Download [the patcher](https://github.com/pietroglyph/lasagne/releases) from the releases section and run it. It should find your game and apply the patch to it. The patcher only supports Windows; the game also supports macOS, but I couldn't be bothered to deal with the pain of a multiplatform GUI.
+
 ## Features
 
 * Working multiplayer
@@ -15,10 +19,6 @@ _An enhanced multiplayer patch, patcher, and matchmaking server for Garfield Kar
   - Jumping bots
   - All powerups are of one type
 * Some other features that you'll have to look for
-
-## Installation
-
-Download [the patcher](https://github.com/pietroglyph/lasagne/releases) from the releases section and run it. It should find your game and apply the patch to it. The patcher only supports Windows; the game also supports macOS, but I couldn't be bothered to deal with the pain of a multiplatform GUI.
 
 ## How Did I Do This?
 
