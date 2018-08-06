@@ -22,7 +22,7 @@ Download the patcher from the releases section and run it. It should find your g
 
 ## How Did I Do This?
 
-IL Assembly (the instruction set for the .NET VM) is much closer the original code (and preserves more information) than most other ISAs, like x86. For this reason, IL assembly can be decompiled into real C#, which can then be recompiled. dnSpy is a wonderful tool which handles this process (and provices a debugger!), which makes reversing Unity/C# games pretty easy.
+.NET Intermediate Language (like Java bytecode), is the instruction set for the .NET VM. I is much closer the original code (and preserves more information) than most other instruction sets, like x86. For this reason, IL assembly can be decompiled into real C# that is pretty close to the original code-this code can even be recompiled. dnSpy is a wonderful tool which handles this process (and provices a debugger!), which makes reversing _and patching_ Unity/C# games pretty easy.
 
 ## Building from Source
 
@@ -32,4 +32,4 @@ Patching the game itself is tricker. The easiest way to modify the source is to 
 
 ## Legal
 
-I am only distributing my changes to the game, not the game itself. You need a working copy of the game. The patches are only the differences, not the orignal files. The license that applies to all my work in this repository can be found under a file called `LICENSE`. All other content is copyrighted by its respective owner.
+I am only distributing my changes to the game, not the game itself. You need a working copy to use any of this. The patches are only the differences, not the orignal files. The license that applies to all my work in this repository can be found under a file called `LICENSE`. All other content is copyrighted by its respective owners.
