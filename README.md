@@ -1,7 +1,7 @@
 # lasagne
 _An enhanced multiplayer patch, patcher, and matchmaking server for Garfield Kart._
 
-(The developers of the game have released an update that enables multiplayer, like this patch. This has some more features, as you can see below, and you can still install it if you want them.)
+(The developers of the game have released an update that enables multiplayer, like this patch. This patch has some more features, as you can see below, and you can still install it if you want them.)
 
 ## Features
 
