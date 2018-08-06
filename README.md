@@ -18,7 +18,7 @@ _An enhanced multiplayer patch, patcher, and matchmaking server for Garfield Kar
 
 ## Installation
 
-Download the patcher from the releases section and run it. It should find your game and apply the patch to it. The patcher only supports Windows; the game also supports macOS, but I couldn't be bothered to deal with the pain of a multiplatform GUI.
+Download [the patcher](https://github.com/pietroglyph/lasagne/releases) from the releases section and run it. It should find your game and apply the patch to it. The patcher only supports Windows; the game also supports macOS, but I couldn't be bothered to deal with the pain of a multiplatform GUI.
 
 ## How Did I Do This?
 
