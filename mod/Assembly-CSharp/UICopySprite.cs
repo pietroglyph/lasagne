@@ -1,0 +1,5 @@
+	public void Start()
+	public void Update()
+	public void LateUpdate()
+	public void OnDestroy()
+	public void OnDisable()

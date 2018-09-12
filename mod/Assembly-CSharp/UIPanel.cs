@@ -1,0 +1,3 @@
+	[HideInInspector]
+	[SerializeField]
+	[HideInInspector]

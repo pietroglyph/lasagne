@@ -1,0 +1,9 @@
+    <ProjectGuid>{40D081E2-9F4B-4188-8728-F7E971B371AC}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Reference Include="System">
+      <HintPath>..\..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Garfield Kart.Patched.PorFavor\GarfieldKartNoMulti_Data\Managed\System.dll</HintPath>
+    </Reference>
+    <Compile Include="ASE_Flurry.cs" />
+    <Compile Include="ModGUIHelper.cs" />
+    <Compile Include="SplashScreen.cs" />
